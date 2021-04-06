@@ -17,3 +17,4 @@ etc/nginx/*.crt
 etc/nginx/*.key
 .venv
 *.sqlite3
+env/
