@@ -1,0 +1,110 @@
+{% load static %}
+{% load utils %}
+{% load cache %}
+
+<!DOCTYPE html>
+<html lang="es">
+    <head>
+        <meta charset="utf-8">
+        <meta name="language" content="es">
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+        
+        <!-- Primary Meta Tags -->
+        <title>{% block title %}PACT 4.0 | CTA{% endblock %}</title>
+        <meta name="title" content="PACT 4.0 | CTA">
+        <meta name="description" content="{{PAGE_DESCRIPTION}}">
+
+        <!-- Open Graph / Facebook -->
+        <meta property="og:type" content="website">
+        <meta property="og:url" content="https://www.diagnosticomadurez4.0.cta.org.co/">
+        <meta property="og:title" content="PACT 4.0 | CTA">
+        <meta property="og:description" content="{{PAGE_DESCRIPTION}}">
+        <meta property="og:image" content="{% http2static 'img/icono-cta.png' %}">
+
+        <!-- Twitter -->
+        <meta property="twitter:card" content="summary_large_image">
+        <meta property="twitter:url" content="https://www.diagnosticomadurez4.0.cta.org.co/">
+        <meta property="twitter:title" content="PACT 4.0 | CTA">
+        <meta property="twitter:description" content="{{PAGE_DESCRIPTION}}">
+        <meta property="twitter:image" content="{% http2static 'img/icono-cta.png' %}">
+
+
+        <meta name="keywords" content="Diagnóstico 4.0 Revolucion Industrial">
+
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no, minimal-ui">
+        <meta name="apple-mobile-web-app-title" content="Diagnóstico Madurez Digital">
+        <meta name="apple-mobile-web-app-capable" content="yes">
+        <meta name="apple-mobile-web-app-status-bar-style" content="black">
+
+        
+        <link rel="apple-touch-icon" sizes="57x57" href="{% http2static 'favicon/apple-icon-57x57.png' %}">
+        <link rel="apple-touch-icon" sizes="60x60" href="{% http2static 'favicon/apple-icon-60x60.png' %}">
+        <link rel="apple-touch-icon" sizes="72x72" href="{% http2static 'favicon/apple-icon-72x72.png' %}">
+        <link rel="apple-touch-icon" sizes="76x76" href="{% http2static 'favicon/apple-icon-76x76.png' %}">
+        <link rel="apple-touch-icon" sizes="114x114" href="{% http2static 'favicon/apple-icon-114x114.png' %}">
+        <link rel="apple-touch-icon" sizes="120x120" href="{% http2static 'favicon/apple-icon-120x120.png' %}">
+        <link rel="apple-touch-icon" sizes="144x144" href="{% http2static 'favicon/apple-icon-144x144.png' %}">
+        <link rel="apple-touch-icon" sizes="152x152" href="{% http2static 'favicon/apple-icon-152x152.png' %}">
+        <link rel="apple-touch-icon" sizes="180x180" href="{% http2static 'favicon/apple-icon-180x180.png' %}">
+        <link rel="icon" type="image/png" sizes="192x192"  href="{% http2static 'favicon/android-icon-192x192.png' %}">
+        <link rel="icon" type="image/png" sizes="32x32" href="{% http2static 'favicon/favicon-32x32.png' %}">
+        <link rel="icon" type="image/png" sizes="96x96" href="{% http2static 'favicon/favicon-96x96.png' %}">
+        <link rel="icon" type="image/png" sizes="16x16" href="{% http2static 'favicon/favicon-16x16.png' %}">
+        <link rel="icon" type="image/png" href="{% http2static 'favicon/favicon.ico' %}">
+        <link rel="manifest" href="{% http2static 'favicon/manifest.json' %}">
+        <meta name="msapplication-TileColor" content="#ffffff">
+        <meta name="msapplication-TileImage" content="{% http2static '/ms-icon-144x144.png' %}">
+        <meta name="theme-color" content="#ffffff">
+
+        {% block metatags %}{% endblock %}
+
+        {% block preloads %}{% endblock %}
+        <link rel="preload" as="style" href="{% http2static 'css/bootstrap.min.css' %}" crossorigin>
+        <link rel="preload" as="style" href="{% http2static 'css/all.min.css' %}" crossorigin>
+        
+        {% if custom_stylesheet %}
+        <link rel="preload" as="style" href="{% http2static 'css/'|add:custom_stylesheet %}" crossorigin>
+        {% endif %}
+        
+        <link rel="preload" as="style" href="{% http2static 'css/base.css' %}" crossorigin>
+
+        <script src="{% http2static 'js/jquery-3.2.1.min.js' %}" type="text/javascript" crossorigin></script>
+        <script src="{% http2static 'js/bootstrap.min.js' %}" type="text/javascript" crossorigin></script>
+        {% block head %}{% endblock %}
+        <link rel="stylesheet" href="{% http2static 'css/bootstrap.min.css' %}" type="text/css" crossorigin>
+        <link rel="stylesheet" href="{% http2static 'css/all.min.css' %}" type="text/css" crossorigin>
+
+        {% if custom_stylesheet %}
+        <link rel="stylesheet" href="{% http2static 'css/'|add:custom_stylesheet %}" type="text/css" crossorigin>
+        {% endif %}
+        <link rel="stylesheet" href="{% http2static 'css/base.css' %}" type="text/css" crossorigin>
+
+        <script>
+            window.loading = {head: Date.now()}
+            window.title = {{title|json}}
+            window.user = {{user|json}}
+            window.DEBUG = {{DEBUG|json}}
+            window.ENVIRONMENT = '{{ENVIRONMENT}}'
+        </script>
+
+    </head>
+    <body>
+        {% block outer %}
+            {% block header %}
+                {% include 'core/nav.html' %}
+            {% endblock %}
+
+            {% block inner %}
+            <div class="container-fluid inner-content">
+                {% block inner_container %}
+                {% endblock %}
+            </div>
+            {% endblock %}
+
+        {% endblock %}
+
+        <script src="{% http2static 'js/overrides.js' %}" type="text/javascript" crossorigin></script>
+        {% block tail %}{% endblock %}
+
+    </body>
+</html>

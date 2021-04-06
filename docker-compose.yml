@@ -1,0 +1,10 @@
+version: '2.2' 
+
+services:
+
+  #rtmp
+  rtmp:
+    image: tiangolo/nginx-rtmp
+    restart: always
+    ports:
+      - 1935:1935

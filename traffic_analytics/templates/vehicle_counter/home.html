@@ -1,0 +1,383 @@
+{% extends "core/base.html" %}
+{% load static %}
+{% load utils %}
+
+{% block title %}{{title}}{% endblock %}
+
+{% block inner %}
+
+<style>
+    h1 {
+        font-family: sans-serif;
+        font-size: 64px;
+        color: #CCC;
+        padding: 5px;
+        margin: 5px;
+    }
+
+    #video_image {
+        position: absolute;
+        z-index: 1;
+        border-radius: 20px;
+    }
+    #detection_image {
+        position: absolute;
+        z-index: 1;
+        border-radius: 20px;
+    }
+
+    #canvas_container {
+        display: inline-block;
+        width: 800px;
+        height: 400px;
+        margin: 10px auto;
+        background: black;
+        position: relative;
+        border: 0px solid black;
+        border-radius: 20px;
+        box-shadow: 0 5px 50px #333
+    }
+
+    #myCanvas {
+        position: relative;
+        z-index: 20;
+    }
+    .checkbox-grid li {
+        display: block;
+        float: left;
+        width: 100%;
+    }
+
+</style>
+
+<div class="container-fluid">
+    <br>
+    <div class="card" style="width:800px; ">
+        <div class="card-header">
+            <h4>Objetos a contar</h4>
+        </div>
+        <div class="row" style="margin-left:20px">
+            <div class="col-2" >
+                <input type="checkbox" name="text1" value="value1" /><label for="text1">Car</label>
+            </div>
+            <div class="col-2" >
+                <input type="checkbox" name="text2" value="value2" /><label for="text2">Truck</label>
+            </div>
+            <div class="col-2" >
+                <input type="checkbox" name="text3" value="value3" /><label for="text3">Bus</label>
+            </div>
+            <div class="col-2" >
+                <input type="checkbox" name="text4" value="value4" /><label for="text4">Bycicle</label>
+            </div>
+            <div class="col-2" >
+                <input type="checkbox" name="text5" value="value5" /><label for="text5">Bike</label>
+            </div>
+        </div>
+    </div>
+    <br>    
+    <div class="row" style="margin-left:10px">
+        <img id="detection_image" width="800px" height="400px"   src="{% url 'vehicle_counter:monitor' %}"  />
+        
+        <canvas id="myCanvas" width="800px" height="400px">
+            Your browser does not support the HTML5 canvas tag.
+        </canvas>
+        
+        
+    </div>
+    
+    
+    <div class="row">
+        <div class="btn-group btn-group-justified " style="margin-left:20px">
+            <div class="btn-group">
+                <button id="edit_roi_button" type="button" class="btn btn-primary">Edit Detection Zone</button>
+                <button id="edit_lane_button" type="button" class="btn btn-primary">Edit lane Separators</button>
+    
+            </div>   
+        </div>
+    </div>
+    <br>
+    <div class="card" style="width:800px; ">
+        <div class="card-header">
+            <h4>Zona de conteo</h4>
+        </div>
+        <div class="row" style="margin-left:20px">
+            <div class="row" >
+                <div class="col-sm" >
+                    <h5>Punto1: </h5>
+                </div>
+                <div class="col-sm" >
+                    <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
+                </div>
+                
+                <div class="col-sm" >
+                    <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
+                </div>
+            </div>
+            <div class="row" >
+                <div class="col-sm" >
+                    <h5>Punto1: </h5>
+                </div>
+                <div class="col-sm" >
+                    <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
+                </div>
+                
+                <div class="col-sm" >
+                    <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
+                </div>
+            </div>
+            
+            <div class="row" >
+                <div class="col-sm" >
+                    <h5>Punto3: </h5>
+                </div>
+                <div class="col-sm" >
+                    <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
+                </div>
+                
+                <div class="col-sm" >
+                    <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
+                </div>
+            </div>
+            
+        
+        </div>
+    </div>
+    
+</div>
+
+<script>
+
+    
+    
+    vehicle_count_zone={{ detection_roi|safe }}
+    lanes_separator={{ street_lanes |safe }}
+    console.log(lanes_separator)
+    window.addEventListener("load", event => {
+        draw_main()
+     
+    });
+ 
+    //USEFUL VARIABLES INIT
+    var clicked_lane={
+        "point":-1,
+        "lane":-1
+    }
+    var clicked_vertice = -1
+    var isMouseDown = false
+  
+    //CONFIG ROI DETECTION
+    var toggle_roi = false
+    var edit_roi_button = document.getElementById("edit_roi_button")
+    edit_roi_button.onclick = function () {
+
+        if (toggle_roi) {
+            toggle_roi = false
+            edit_roi_button.innerHTML = "Edit zone detection"
+            for(let i in vehicle_count_zone){
+                vehicle_count_zone[i].x=vehicle_count_zone[i].x/canvas.width
+                vehicle_count_zone[i].y=vehicle_count_zone[i].y/canvas.height
+            }
+            $.ajax({
+                type: "POST",
+                url: "{% url 'vehicle_counter:update_roi' %}",
+                data: {
+                    detection_roi: JSON.stringify(vehicle_count_zone)
+                }
+            }).done(function( data ) {
+                console.log(data)
+            });
+            for(let i in vehicle_count_zone){
+                vehicle_count_zone[i].x=vehicle_count_zone[i].x*canvas.width
+                vehicle_count_zone[i].y=vehicle_count_zone[i].y*canvas.height
+            }
+            draw_roi()
+            //SAVE URL
+        }
+        else {
+            edit_roi_button.innerHTML = "Save zone detection"
+            toggle_roi = true
+            draw_roi()
+
+        }
+    }
+    //CONFIG ROI DETECTION
+    var toggle_lane = false
+    var edit_lane_button = document.getElementById("edit_lane_button")
+    edit_lane_button.onclick = function () {
+
+        if (toggle_lane) {
+            toggle_lane = false
+            edit_lane_button.innerHTML = "Edit lane Separators"
+             //MULTIPLY LANE POINTS WITH CANVAS SIZE
+            for(let i in lanes_separator){
+                lanes_separator[i].x_1=lanes_separator[i].x_1/canvas.width
+                lanes_separator[i].y_1=lanes_separator[i].y_1/canvas.height
+                lanes_separator[i].x_2=lanes_separator[i].x_2/canvas.width
+                lanes_separator[i].y_2=lanes_separator[i].y_2/canvas.height
+            }
+            $.ajax({
+                type: "POST",
+                url: "{% url 'vehicle_counter:update_lane_separator' %}",
+                data: {
+                    lanes_separator: JSON.stringify(lanes_separator)
+                }
+            }).done(function( data ) {
+                console.log(data)
+            });
+             //MULTIPLY LANE POINTS WITH CANVAS SIZE
+            for(let i in lanes_separator){
+                lanes_separator[i].x_1=lanes_separator[i].x_1*canvas.width
+                lanes_separator[i].y_1=lanes_separator[i].y_1*canvas.height
+                lanes_separator[i].x_2=lanes_separator[i].x_2*canvas.width
+                lanes_separator[i].y_2=lanes_separator[i].y_2*canvas.height
+            }
+            //SAVE URL
+            draw_lanes()
+        }
+        else {
+            edit_lane_button.innerHTML = "Save lane Separators"
+            toggle_lane = true
+            draw_lanes()
+            clicked_lane
+
+        }
+    }
+    //CANVAS INIT
+    var canvas = document.getElementById("myCanvas")
+    //MULTIPLY ROI POINTS WITH CANVAS SIZE
+    for(let i in vehicle_count_zone){
+        vehicle_count_zone[i].x=vehicle_count_zone[i].x*canvas.width
+        vehicle_count_zone[i].y=vehicle_count_zone[i].y*canvas.height
+    }
+    //MULTIPLY LANE POINTS WITH CANVAS SIZE
+    for(let i in lanes_separator){
+        lanes_separator[i].x_1=lanes_separator[i].x_1*canvas.width
+        lanes_separator[i].y_1=lanes_separator[i].y_1*canvas.height
+        lanes_separator[i].x_2=lanes_separator[i].x_2*canvas.width
+        lanes_separator[i].y_2=lanes_separator[i].y_2*canvas.height
+    }
+    var ctx = canvas.getContext("2d")
+    ctx.beginPath()
+
+
+    canvas.addEventListener('mousedown', function (e) {
+        if(toggle_roi){
+            for(let i in vehicle_count_zone){
+                if( distance(e.offsetX,e.offsetY,vehicle_count_zone[i].x,vehicle_count_zone[i].y) < 10) {
+                    clicked_vertice=i
+                    break
+                }
+            }
+        }
+        if(toggle_lane){
+            for(let i in lanes_separator){
+                if( distance(e.offsetX,e.offsetY,lanes_separator[i].x_1,lanes_separator[i].y_1) < 10) {
+                    clicked_lane.lane=i
+                    clicked_lane.point=1
+                    break
+                }
+                if( distance(e.offsetX,e.offsetY,lanes_separator[i].x_2,lanes_separator[i].y_2) < 10) {
+                    clicked_lane.lane=i
+                    clicked_lane.point=2
+                    break
+                }
+            }
+        }
+        
+        isMouseDown = true
+    })
+
+    canvas.addEventListener('mouseup', function (e) {
+        isMouseDown = false
+        
+        clicked_vertice=-1
+        clicked_lane={
+            "point":-1,
+            "lane":-1
+        }
+    })
+
+    canvas.addEventListener('mousemove', function (e) {
+        if (isMouseDown && toggle_roi) {
+           
+            if(clicked_vertice>=0 & clicked_vertice<=3){
+                vehicle_count_zone[clicked_vertice].x=e.offsetX
+                vehicle_count_zone[clicked_vertice].y=e.offsetY
+                
+            }
+            draw_main()
+        }
+        
+        if(isMouseDown && toggle_lane){
+            if(clicked_lane.point!=-1 && clicked_lane.lane!=-1){
+                if(clicked_lane.point==1){
+                    lanes_separator[clicked_lane.lane].x_1=e.offsetX
+                    lanes_separator[clicked_lane.lane].y_1=e.offsetY
+                }else if(clicked_lane.point==2){
+                    lanes_separator[clicked_lane.lane].x_2=e.offsetX
+                    lanes_separator[clicked_lane.lane].y_2=e.offsetY
+                }
+                
+            }
+            
+            draw_main()
+        }    
+    })
+
+    function distance(x1,y1,x2,y2){
+        return Math.sqrt( (x1-x2)^2+(y1-y2)^2)
+    }
+    function draw_main(){        
+        ctx.clearRect(0, 0, canvas.width, canvas.height)
+        
+        draw_roi()
+        draw_lanes()
+    }
+    function draw_roi() {
+
+        if(vehicle_count_zone.length==0)
+            return
+        ctx.beginPath()
+        
+        if(toggle_roi)
+            ctx.strokeStyle = 'red'
+        else
+            ctx.strokeStyle = 'black'
+        ctx.lineWidth = 5
+        ctx.moveTo(vehicle_count_zone[0].x, vehicle_count_zone[0].y);
+        for(let i=1;i<vehicle_count_zone.length;i++){
+
+            ctx.lineTo(vehicle_count_zone[i].x, vehicle_count_zone[i].y);
+        }
+        ctx.lineTo(vehicle_count_zone[0].x, vehicle_count_zone[0].y);
+    
+      
+        ctx.stroke()
+      
+
+    }
+    function draw_lanes() {
+        if(lanes_separator.length==0)
+            return
+        ctx.beginPath()
+
+        if(toggle_lane)
+            ctx.strokeStyle = 'red'
+        else
+            ctx.strokeStyle = 'black'
+        ctx.lineWidth = 5
+        for(let i=0;i<lanes_separator.length;i++){
+            ctx.moveTo(lanes_separator[i].x_1, lanes_separator[i].y_1);
+            ctx.lineTo(lanes_separator[i].x_2, lanes_separator[i].y_2);
+        }
+
+        ctx.stroke()
+
+
+    }
+   
+
+</script>
+
+
+{% endblock %}

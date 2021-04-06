@@ -1,0 +1,15 @@
+<nav class="bg-light navbar navbar-expand-lg p-0">
+    <a href="{% url 'home' %}">
+        <h1 class="d-none d-md-inline ml-1" style="font-size: 26px">
+            <i class="fa fa-fw fa-feather-alt"></i>&nbsp;C4IR Diagnóstico&nbsp;
+        </h1>
+    </a>
+    
+    <div class="ml-auto">
+        {% if user.is_authenticated %}
+            <a href="#" class="lead mx-2">Logout</a>
+        {% else %}
+            <a href="#" class="lead mx-2">Login</a>
+        {% endif %}
+    </div>
+</nav>

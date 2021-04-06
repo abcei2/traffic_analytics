@@ -1,0 +1,388 @@
+{% extends "core/base.html" %}
+{% load utils %}
+
+{% block title %}{{title}}{% endblock %}
+
+{% block preloads %}
+<link rel="preload" as="style" href="{% http2static 'css/select2.min.css' %}" crossorigin>
+{% endblock %}
+
+{% block head %}
+<link rel="stylesheet" href="{% http2static 'css/select2.min.css' %}" type="text/css" crossorigin>
+
+<script src="{% http2static 'js/select2.min.js' %}" type="text/javascript" crossorigin></script>
+<script src="https://www.google.com/recaptcha/api.js"></script>
+{% endblock %}
+
+{% block outer %}
+<style>
+    body {
+        overflow: hidden !important;
+    }
+</style>
+<div class="overflow-auto">
+    <div class="banner" style="background-image: url({% http2static 'img/banner1.jpg' %});"></div>
+
+    <style>
+        form > div {
+            width: 100%;
+        }
+        #signup-form {
+            max-width: 800px;
+            float: none;
+            background-color: #f4f4f2;
+            padding: 15px;
+            border-radius: 15px;
+            border: 1px solid rgba(0,0,0,0.01);
+            box-shadow: 4px 4px 4px rgba(0,0,0,0.03);
+        }
+        #signup-form .input-group {
+            width: 100%;
+        }
+        #password2-field {
+            margin-top: 2px;
+        }
+        #signup-form .input-group > span {
+            transition: border 500ms ease-out;
+            -webkit-transition: border 500ms ease-out;
+            -moz-transition: border 500ms ease-out;
+            -o-transition: border 500ms ease-out;
+        }
+        .pass-len-warning {
+            opacity: 0;
+        }
+        #password-label, #password-label2, #email-label, #field-label {
+            width: 130px;
+        }
+    </style>
+
+    <div id="signup-form" class="mx-auto my-3">
+        <br/>
+        <form action="{% url 'signup' %}" method="POST">{% csrf_token %}
+    
+            <div style="text-align: center;">
+                <h3>Registro de empresa</h3>
+                ¿Ya estás registrado? Ingresa <a href="{% url 'login' %}">aquí</a><br/>
+            </div>
+            <br/>
+
+            {% if signup_errors %}
+                <br/>
+                <span style="color: red; font-size: 1.2em; line-height: 1.2">
+                    {{signup_errors|join:"<br>"}}
+                </span><br/><br/>
+                <br/>
+            {% endif %}
+    
+            <div id="legal-id-field" class="input-group mb-1">
+                <span id="field-label" class="p-2 col-3"><div class="float-left">NIT de la empresa</div></span>
+                <input type="text" name="legal_id" class="form-control my-auto" placeholder="NIT sin puntos, guiones ni dígito de verificación" value="{{legal_id}}" aria-describedby="field-label" autocomplete="something-new" required>
+            </div>
+
+            <div id="name-field" class="input-group mb-1 ">
+                <div class="p-2 col-3"><span id="field-label" ><div class="float-left ">Nombre de la empresa</div></span></div>
+                <input type="text" name="name" class="form-control my-auto" placeholder="Nombre de la empresa" value="{{name}}" aria-describedby="field-label" required>
+            </div>
+
+            <div id="activity-years-field" class="input-group mb-1">
+                <span id="field-label" class="p-2 col-3"><div class="float-left">Años de actividad</div></span>
+                <input type="number" name="activity_years" class="form-control my-auto" placeholder="Tiempo de actividad de la empresa" value="{{activity_years}}" min="0" max="999" aria-describedby="field-label" required>
+            </div>
+
+            <div id="contact-name-field" class="input-group mb-1 ">
+                <div class="p-2 col-3"><span id="field-label" ><div class="float-left ">Persona de contacto</div></span></div>
+                <input type="text" name="contact_name" class="form-control my-auto" placeholder="Nombre de la persona de contacto" value="{{contact_name}}" aria-describedby="field-label" required>
+            </div>
+
+            <div id="phone-field" class="input-group mb-1">
+                <span id="field-label"class="p-2 col-3"><div class="float-left">Celular de contacto</div></span>
+                <input type="text" name="phone" class="form-control my-auto" placeholder="Número de celular de la persona de contacto" value="{{phone}}" aria-describedby="field-label" required>
+            </div>
+    
+            <div id="email-field" class="input-group mb-1">
+                <span id="email-label" class="p-2 col-3"><div class="float-left">Email de contacto</div></span>
+                <input type="email" name="email" class="form-control my-auto" placeholder="Correo de la persona de contacto: correo@ejemplo.com" value="{{email}}" aria-describedby="email-label" required>
+            </div>
+
+            <br>
+
+            <div id="ciiu-field" class="input-group mb-1">
+                <span id="field-label" class="p-2 col-3"><div class="float-left">Código CIIU</div></span>
+                <div class="" style="flex: 1 1 auto; width: 1%;">
+                    <select name="ciiu" class="form-control" aria-describedby="field-label" required>
+                        <option></option>
+                        {% for code, description in CIIU_CODES %}
+                        <option value="{{code}}" {% if ciiu == code %} selected {% endif %}>{{description}}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div id="company-type-field" class="input-group mb-1">
+                <span id="field-label" class="p-2 col-3"><div class="float-left">Tipo de empresa</div></span>
+                <select name="company_type" class="form-control my-auto" aria-describedby="field-label" required>
+                    <option disabled selected value>Selecciona el tipo de empresa</option>
+                    {% for val, label in COMPANY_TYPES %}
+                    <option value="{{val}}">{{label}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="company-sector-field" class="input-group mb-1">
+                <span id="field-label" class="p-2 col-3"><div class="float-left">Sector</div></span>
+                <select name="company_sector" class="form-control my-auto" aria-describedby="field-label" required>
+                    <option disabled selected value>Selecciona el sector de la empresa</option>
+                    {% for val, label in COMPANY_SECTORS_DICT.MANUFACTURE_SECTORS %}
+                    <option value="{{val}}">{{label}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div id="company-size-field" class="input-group mb-1">
+                <span id="field-label" class="p-2 col-3"><div class="float-left">Tamaño en ingresos</div></span>
+                <select name="company_size" class="form-control my-auto" aria-describedby="field-label" required>
+                    <option disabled selected value>Selecciona el tamaño en ingresos operacionales de la empresa</option>
+                    {% for val, label in COMPANY_SIZES_DICT.MANUFACTURE_SIZES %}
+                    <option value="{{val}}">{{label}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+
+            <br>
+            <div id="location-field" class="input-group my-3">
+                <span id="field-label" class="p-2 col-3"><div class="float-left">Dirección</div></span>
+                <input type="hidden" id="lnglat" name="lnglat" class="form-control col-4" value="{{lnglat}}" required>
+                <input type="text" id="address" name="address" class="form-control my-auto" placeholder="Usa el mapa para precisar la ubicación y completa la dirección aquí" value="{{address}}" aria-describedby="field-label" required>
+            </div>
+            <p class="text-center mx-5">
+                <em><b>
+                    Por favor indique en el mapa la localización aproximada de su organización, dando click en el mapa.
+                </b></em>
+            <p>
+            <div id="address-field" class="input-group mb-1" style="z-index: 3;">
+                <span id="field-label" class="p-2 col-3 d-none d-sm-block">
+                    <div class="float-left" style="margin-top:135px">Ubicación</div>
+                </span>
+                <div id="map" class="form-control" style="height: 350px;"></div>
+
+                <script src="{% http2static 'js/mapbox-gl.js' %}" type="text/javascript" crossorigin></script>
+                <link rel="stylesheet" href="{% http2static 'css/mapbox-gl.css' %}" type="text/css" crossorigin>
+                <script src="{% http2static 'js/mapbox-gl-geocoder.min.js' %}" type="text/javascript" crossorigin></script>
+                <link rel="stylesheet" href="{% http2static 'css/mapbox-gl-geocoder.css' %}" type="text/css" crossorigin>
+
+                <!-- Promise polyfill script required to use Mapbox GL Geocoder in IE 11 -->
+                <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.min.js"></script>
+                <script src="https://cdn.jsdelivr.net/npm/es6-promise@4/dist/es6-promise.auto.min.js"></script>
+                <script>
+                    mapboxgl.accessToken = '{{MAP_KEY}}';
+                    var map = new mapboxgl.Map({
+                        container: 'map',
+                        style: 'mapbox://styles/mapbox/streets-v11',
+                        center: [-75.566583, 6.264805],
+                        minZoom: 5,
+                        zoom: 5,
+                        maxZoom: 17,
+                        maxBounds: [
+                            [-82.449096, -4.965266], // Southwest coordinates
+                            [-65.773103, 14.677231] // Northeast coordinates
+                        ],
+                    });
+                    var geocoder = new MapboxGeocoder({
+                        accessToken: mapboxgl.accessToken,
+                        countries: 'co',
+                        language: 'es-CO',
+                        mapboxgl: mapboxgl,
+                    });
+                    map.addControl(geocoder);
+                    map.scrollZoom.disable();
+                    map.addControl(new mapboxgl.NavigationControl());
+
+                    let marker;
+                    map.on('click', function(e) {
+                        if(marker){
+                            geocoder.clear(); 
+                            marker.remove()
+                        }
+                        marker = new mapboxgl.Marker({ draggable: true })
+                            .setLngLat([e.lngLat.lng, e.lngLat.lat])
+                            .addTo(map)
+                        marker.on('dragend', function (e) {
+                            const lnglat = e.target.getLngLat()
+                            document.getElementById("lnglat").value = `${lnglat.lng},${lnglat.lat}`
+                        })
+                        document.getElementById("lnglat").value = `${e.lngLat.lng},${e.lngLat.lat}`
+                    });
+                    geocoder.on('result', function(e) {
+                        document.getElementById("lnglat").value = e.result.center.toString()
+                        // document.getElementById("address").value = e.result.place_name
+
+                        if(marker) marker.remove()
+                        marker = new mapboxgl.Marker({ draggable: true })
+                            .setLngLat([e.result.center[0], e.result.center[0]])
+                            .addTo(map)
+                        marker.on('dragend', function (e) {
+                            const lnglat = e.target.getLngLat()
+                            document.getElementById("lnglat").value = `${lnglat.lng},${lnglat.lat}`
+                        })
+                    })
+                </script>
+            </div>
+
+            <br/><br/>
+    
+            <div id="password1-field" class="input-group mb-1">
+                <span id="password-label" class="p-2 col-3"><div class="float-left">Clave</div></span>
+                <input type="password" name="password" class="form-control my-auto" placeholder="••••••••••••" aria-describedby="password-label" required>
+            </div>
+
+            <div id="password2-field" class="input-group mb-1">
+                <span id="password-label2" class="p-2 col-3"><div class="float-left">Clave de nuevo</div></span>
+                <input type="password" name="password2" class="form-control my-auto" placeholder="••••••••••••" aria-describedby="password-label" required>
+            </div>
+            <small class="pass-len-warning" style="color: red">Escribe al menos 8 letras/números/símbolos</small>
+            <input type="hidden" name="next" value="{{next}}">
+
+            <br/>
+            <div style="text-align: center;">
+                <div class="custom-control custom-checkbox mx-auto" style="width: fit-content;">
+                    <input type="checkbox" class="custom-control-input" id="privacy" name="privacy" required>
+                    <label class="custom-control-label" for="privacy">Acepto las </label>
+                    <a href="#" data-toggle="modal" data-target="#privacyModal">políticas de privacidad</a>
+                </div>
+                
+                <div class="modal fade" id="privacyModal" tabindex="-1" role="dialog" aria-labelledby="privacy_modalLabel" aria-hidden="true">
+                    <div class="modal-dialog" role="document">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Política de privacidad</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                    <span aria-hidden="true">&times;</span>
+                                </button>
+                            </div>
+                            <div class="modal-body" style="text-align: justify;font-family: auto;">
+                                <p>El Centro de Ciencia y Tecnología de Antioquia - CTA, informa que los datos personales que se recolectan a través de este sitio web serán tratados de manera confiable y segura acorde con la política y normas de protección de datos adoptados por el CTA, para desarrollar y ejecutar las acciones que comprenden el objeto misional de la institución, consistente en impulsar, articular, transferir y generar conocimiento científico y tecnológico, y para la realización de informes, convocatorias y campañas tendientes a promover nuestras capacidades institucionales. En este sentido los datos podrían ser compartidos de manera segura y bajo la dirección del CTA, a empresas nacionales o extranjeras. proveedores de servicios y/o contratistas, que apoyen al CTA en la gestión de los casos anteriormente mencionados.</p>
+                                <p>Estos datos serán gestionados de manera confidencial y alojados en una infraestructura informática segura por parte del CTA y/o de sus encargados.</p>
+                                <p>Para conocer la Política de Protección de Datos Personales puede acceder a <a href="https://www.cta.org.co">www.cta.org.co</a>, cualquier consulta, reclamación, petición de modificación, rectificación o cancelación de sus datos personales podrá efectuarla mediante comunicación escrita dirigida a <a href="mailto:datospersonales@cta.org.co">datospersonales@cta.org.co</a>.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="g-recaptcha my-3 mx-auto" style="width: fit-content;" data-sitekey="{{CAPTCHA_SITE_KEY}}"></div>
+            </div>
+
+            <button class="btn btn-lg btn-primary" style="width:100%" type="submit">
+                Registrar
+                &nbsp;&nbsp;<i class="fa fa-angle-double-right"></i>
+            </button>
+    
+        </form>
+    </div>
+
+    {% include 'core/footer.html' %}
+
+</div>
+{% endblock %}
+
+{% block tail %}
+{{ COMPANY_SECTORS_DICT|json_script:"company-sectors-dict" }}
+{{ COMPANY_SIZES_DICT|json_script:"company-sizes-dict" }}
+<script>
+    function checkPasswordValid() {
+        var pass = $('#password1-field input').val();
+        if (pass.length >= 3 && pass.length < 8) {
+            $('.pass-len-warning').css('opacity', '1');
+        } else if (pass.length >= 8) {
+            $('#password1-field input').css('border-color', 'green');
+            $('.pass-len-warning').css('opacity', '0');
+        } else {
+            $('#password1-field input').css('border-color', '#aaa');
+        }
+    }
+    function checkPasswordsEqual() {
+        var pass1 = $('#password1-field input').val();
+        var pass2 = $('#password2-field input').val();
+        if (pass1.length < 8) {
+            $('#password1-field input').css('border-color', 'red');
+        } else if (pass2.length >= 8 && pass1 == pass2) {
+            $('#password2-field input').css('border-color', 'green');
+        } else {
+            $('#password2-field input').css('border-color', 'red');
+        }
+    }
+    function checkEmailField() {
+        if ($('#email-field input').val().length < 7) {
+            $('#email-field input').css('border-color', '#aaa');
+            return;
+        }
+        if ($('#email-field input')[0].validationMessage.length) {
+            $('#email-field input').css('border-color', '#aaa');
+        } else {
+            $('#email-field input').css('border-color', 'green');
+        }
+    }
+    window.addEventListener('load', function() {
+        $('#password1-field input').on('keyup', function() {
+            checkPasswordValid();
+            checkPasswordsEqual();
+        });
+        $('#password2-field input').on('keyup', function() {
+            checkPasswordsEqual();
+        });
+        $('#email-field input').on('keyup', function () {
+            checkEmailField();
+        });
+        $('#legal-id-field input').on('keyup keydown keypress', function(e){
+            const re = /^[0-9]+$/;
+            const val_str = $(this).val()
+            if (!re.test(val_str)) $(this).val(val_str.slice(0, -1))
+        })
+        $('#activity-years-field input').on('keyup keydown keypress', function(e){
+            const re = /^[0-9]+$/;
+            let val_str = $(this).val()
+            if (!re.test(val_str)) {$(this).val(val_str.slice(0, -1))}
+            const val = parseInt($(this).val())
+            if (val > 999 || val < 0) $(this).val(val_str.slice(0, -1))
+        })
+
+        $('#phone-field input').on('keyup keydown keypress', function(e){
+            const re = /^[0-9]+$/;
+            const val_str = $(this).val()
+            if (!re.test(val_str)) $(this).val(val_str.slice(0, -1))
+        })
+        // Make reCaptcha required
+        const recaptcha = document.querySelector('#g-recaptcha-response')
+        if(recaptcha) recaptcha.setAttribute("required", "required")
+
+        {% if not legal_id %}
+        $('#legal-id-field input').val('')
+        $('#legal-id-field input').focus().click();
+        {% endif %}
+    })
+    $(document).ready(function() {
+        $('#ciiu-field select').select2({
+            placeholder: "Selecciona el código que identifica la actividad de la empresa",
+        });
+        $('#company-type-field select').on("change", function (e) {
+            const selected_type = e.target.value;
+            const company_sectors_dict = JSON.parse(document.getElementById('company-sectors-dict').textContent);
+            const company_sizes_dict = JSON.parse(document.getElementById('company-sizes-dict').textContent);
+            const sector_items = company_sectors_dict[`${selected_type.toUpperCase()}_SECTORS`];
+            const size_items = company_sizes_dict[`${selected_type.toUpperCase()}_SIZES`];
+
+            let sector_options_html = "<option disabled selected value>Selecciona el sector de la empresa</option>"
+            for (let item of sector_items) {
+                sector_options_html += `<option value="${item[0]}">${item[1]}</option>`
+            }
+            $('#company-sector-field select').html(sector_options_html);
+
+            let size_options_html = "<option disabled selected value>Selecciona el tamaño en ingresos operacionales de la empresa</option>"
+            for (let item of size_items) {
+                size_options_html += `<option value="${item[0]}">${item[1]}</option>`
+            }
+            $('#company-size-field select').html(size_options_html);
+        })
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "core/base.html" %}
+{% load utils %}
+
+{% block title %}Bienvenido{% endblock %}
+
+{% block outer %}
+<div class="overflow-auto">
+    <div class="banner" style="background-image: url({% http2static 'img/banner1.jpg' %});"></div>
+    <div class="col-md-6 my-3 mx-auto">
+        <style>
+            #login-form .input-group > span {
+                width: 100px;
+                transition: border 500ms ease-out;
+                -webkit-transition: border 500ms ease-out;
+                -moz-transition: border 500ms ease-out;
+                -o-transition: border 500ms ease-out;
+            }
+            #login-form {
+                max-width: 800px;
+                margin: auto;
+                text-align: center;
+                background-color: #f4f4f2;
+                padding: 15px;
+                border-radius: 15px;
+                border: 1px solid rgba(0,0,0,0.01);
+                box-shadow: 4px 4px 4px rgba(0,0,0,0.03);
+            }
+            #login-form div.username-input {
+                margin-bottom: 5px;
+                margin-top: 30px;
+            }
+            #login-form button[type=submit] {
+                width: 96%;
+                /* background-color: var(--gold);
+                border-color: var(--gold);
+                color: unset;
+                box-shadow: unset; */
+            }
+            #login-form span.login-errors {
+                color: red;
+            }
+        
+            @media (max-width: 767px) {
+                #login-form div.username-input {
+                    margin-top: 10px;
+                }
+            }
+        
+        </style>
+        
+        <div id="login-form">
+            <br/>
+            <form action="{% url 'login' %}" method="POST">{% csrf_token %}
+
+                <h3 style="text-align: center" class="aller">Iniciar sesión</h3>
+                <div>Recuerda que el NIT ya debe estar inscrito.</div>
+                De lo contrario, registra tu empresa <a href="{% url 'signup' %}">aquí.</a>
+
+                {% if login_errors %}
+                    <br/><br/>
+                    <span class="login-errors">
+                        {{login_errors|join:"<br>"}}
+                    </span>
+                {% endif %}
+
+                <div id="username-login-field" class="input-group username-input">
+                    <span class="input-group-addon" id="username-label"><div class="float-left">NIT</div></span>
+                    <input type="text" name="legal_id" id="username-field" class="form-control" placeholder="NIT" aria-describedby="username-label" required>
+                </div>
+                <div id="password-login-field" class="input-group">
+                    <span class="input-group-addon" id="password-label"><div class="float-left">Clave</div></span>
+                    <input type="password" name="password" class="form-control" placeholder="••••••••" aria-describedby="password-label" required>
+                </div>
+                <br/>
+        
+                <input type="hidden" name="next" value="{{next}}">
+
+                <small>¿Problemas para acceder?<br>Escríbenos al correo <a href="mailto:info@cta.org.co">info@cta.org.co</a></small>
+        
+                <button class="btn btn-lg btn-primary" type="submit">
+                    Entrar&nbsp;&nbsp;<i class="fa fa-angle-double-right"></i>
+                </button>
+
+            </form>
+            <script>
+                function preventIllegalCharacters(event) {
+                    if (event.keyCode == 32) {
+                        event.preventDefault()
+                    }
+                }
+                function isUsernameValid(username) {
+                    var pattern = /^[\w-]{2,36}$/
+                    return pattern.test(username)
+                }
+                function isPasswordValid(password) {
+                    return password.length >= 8
+                }
+                function checkLoginUsernameValid() {
+                    var username = $('#username-login-field input').val()
+                    if (isUsernameValid(username)) {
+                        $('#username-login-field span').css('border-color', 'green')
+                    } else {
+                        $('#username-login-field span').css('border-color', '#aaa')
+                    }
+                }
+                function checkLoginPasswordValid() {
+                    var pass = $('#password-login-field input').val()
+                    if (isPasswordValid(pass)) {
+                        $('#password-login-field span').css('border-color', 'green')
+                    } else {
+                        $('#password-login-field span').css('border-color', '#aaa')
+                    }
+                }
+                function checkLoginable() {
+                    var user = $('#username-login-field input').val()
+                    var pass = $('#password-login-field input').val()
+                    if (isUsernameValid(user) && isPasswordValid(pass)) {
+                        setTimeout(function() {
+                            $('#login-form button[type=submit]').css('border-color', 'green')
+                        }, 300)
+                    } else {
+                        $('#login-form button[type=submit]').css('border-color', '#aaa')
+                    }
+                }
+        
+                window.addEventListener('load', function() {
+                    $('#username-login-field input').on('keydown', function(e) {
+                        preventIllegalCharacters(e);
+                    })
+                    $('#username-login-field input').on('keyup', function() {
+                        checkLoginUsernameValid()
+                        checkLoginable()
+                    });
+                    $('#password-login-field input').on('keyup', function() {
+                        checkLoginPasswordValid()
+                        checkLoginable()
+                    });
+                    setTimeout(function() {
+                        // turn fields green if browser auto-filled them
+                        checkLoginUsernameValid()
+                        checkLoginPasswordValid()
+                        checkLoginable()
+                    }, 200)
+                })
+            ;</script>
+        </div>
+    </div>
+
+    <div class="fixed-bottom">
+        {% include 'core/footer.html' %}
+    </div>
+
+    <script>
+        window.addEventListener('load', function() {
+            $('#login-form input[name=username]').focus().click()
+        })
+    </script>
+</div>
+{% endblock %}
+
