@@ -12,5 +12,5 @@ docker-compose up --build
 **Then**  
 python traffic_analytics/manage.py makemigrations  && python traffic_analytics/manage.py migrate && python traffic_analytics/manage.py runserver  
 **In other tab**  
-python traffic_analytics/manage.py object_counter.py
+python traffic_analytics/manage.py object_counter.py  
 **Open  http://localhost:8000/inicio**
