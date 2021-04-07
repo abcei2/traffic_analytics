@@ -50,7 +50,7 @@
 
 </style>
 
-<div class="container-fluid">
+<div class="container">
     <br>
     <div class="card" style="width:800px; ">
         <div class="card-header">
@@ -98,7 +98,7 @@
     <br>
     <div class="card" style="width:800px; ">
         <div class="card-header">
-            <h4>Zona de conteo</h4>
+            <h4>Zona de configuración</h4>
         </div>
         <div class="row" style="margin-left:20px">
             <div class="row" >
@@ -113,32 +113,6 @@
                     <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
                 </div>
             </div>
-            <div class="row" >
-                <div class="col-sm" >
-                    <h5>Punto1: </h5>
-                </div>
-                <div class="col-sm" >
-                    <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
-                </div>
-                
-                <div class="col-sm" >
-                    <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
-                </div>
-            </div>
-            
-            <div class="row" >
-                <div class="col-sm" >
-                    <h5>Punto3: </h5>
-                </div>
-                <div class="col-sm" >
-                    <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
-                </div>
-                
-                <div class="col-sm" >
-                    <label class="col-2" for="text4">x</label><input class="col-7" type="text" name="text4" value="value4"  />
-                </div>
-            </div>
-            
         
         </div>
     </div>
@@ -156,7 +130,7 @@
         draw_main()
      
     });
- 
+    const MIN_DISTANCE_TO_VERTICE_PX=5 //Distance in pixels to detect when vertice is clicked
     //USEFUL VARIABLES INIT
     var clicked_lane={
         "point":-1,
@@ -263,7 +237,7 @@
     canvas.addEventListener('mousedown', function (e) {
         if(toggle_roi){
             for(let i in vehicle_count_zone){
-                if( distance(e.offsetX,e.offsetY,vehicle_count_zone[i].x,vehicle_count_zone[i].y) < 10) {
+                if( distance(e.offsetX,e.offsetY,vehicle_count_zone[i].x,vehicle_count_zone[i].y) < MIN_DISTANCE_TO_VERTICE_PX) {
                     clicked_vertice=i
                     break
                 }
@@ -271,12 +245,12 @@
         }
         if(toggle_lane){
             for(let i in lanes_separator){
-                if( distance(e.offsetX,e.offsetY,lanes_separator[i].x_1,lanes_separator[i].y_1) < 10) {
+                if( distance(e.offsetX,e.offsetY,lanes_separator[i].x_1,lanes_separator[i].y_1) < MIN_DISTANCE_TO_VERTICE_PX) {
                     clicked_lane.lane=i
                     clicked_lane.point=1
                     break
                 }
-                if( distance(e.offsetX,e.offsetY,lanes_separator[i].x_2,lanes_separator[i].y_2) < 10) {
+                if( distance(e.offsetX,e.offsetY,lanes_separator[i].x_2,lanes_separator[i].y_2) < MIN_DISTANCE_TO_VERTICE_PX) {
                     clicked_lane.lane=i
                     clicked_lane.point=2
                     break
@@ -345,8 +319,10 @@
             ctx.strokeStyle = 'black'
         ctx.lineWidth = 5
         ctx.moveTo(vehicle_count_zone[0].x, vehicle_count_zone[0].y);
+        ctx.arc(vehicle_count_zone[0].x, vehicle_count_zone[0].y,MIN_DISTANCE_TO_VERTICE_PX,0,Math.PI*2);
         for(let i=1;i<vehicle_count_zone.length;i++){
 
+            ctx.arc(vehicle_count_zone[i].x, vehicle_count_zone[i].y,MIN_DISTANCE_TO_VERTICE_PX,0,Math.PI*2);
             ctx.lineTo(vehicle_count_zone[i].x, vehicle_count_zone[i].y);
         }
         ctx.lineTo(vehicle_count_zone[0].x, vehicle_count_zone[0].y);

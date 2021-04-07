@@ -9,6 +9,7 @@ import numpy as np
 from brain.db_utils.object_counter_querys import count_object
 #from shapely.geometry.polygon import Polygon
 
+
 m2 = (120-50)/(431-183)
 radius = lambda y: m2*y
 
@@ -80,7 +81,14 @@ class CentroidTracker:
 	def deregister(self, objectID,count_classes):
 
 		# HERER!
-		print("LEFT ",self.objectsTypes[objectID],self.disappeared[objectID],self.boxes[objectID])
+		print("LEFT ",objectID,self.objectsTypes[objectID],self.disappeared[objectID],self.boxes[objectID])
+		
+		object_data={
+			"vehicle_type":self.objectsTypes[objectID]
+		}
+		
+		if not count_object(object_data):
+			print("Somenthing gone wrong with db")
 		# to deregister an object ID we delete the object ID from
 		# both of our respective dictionaries
 		count_classes[self.objectsTypes[objectID]]+=1

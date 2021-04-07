@@ -1,5 +1,5 @@
 '''
-CENTROIDTRACKER SAVES THE OBJECT WHEN IN AND OUT!
+CENTROIDTRACKER.py SAVES THE OBJECT WHEN IN AND OUT!
 '''
 
 import cv2
@@ -19,12 +19,18 @@ import cv2
 import base64
 
 classNames = { 0: 'background',
-    1: 'aeroplane', 2: 'bicycle', 3: 'bird', 4: 'boat',
-    5: 'bottle', 6: 'bus', 7: 'car', 8: 'cat', 9: 'chair',
+    1: 'aeroplane', 2: 'Bike', 3: 'bird', 4: 'boat',
+    5: 'bottle', 6: 'Bus', 7: 'Car', 8: 'cat', 9: 'chair',
     10: 'cow', 11: 'diningtable', 12: 'dog', 13: 'horse',
-    14: 'motorbike', 15: 'person', 16: 'pottedplant',
+    14: 'Motorbike', 15: 'Person', 16: 'pottedplant',
     17: 'sheep', 18: 'sofa', 19: 'train', 20: 'tvmonitor' }
-count_classes=[0 for i in range(len(classNames))]
+
+allowedTypes = {  2: 'Bike', 6: 'Bus', 7: 'Car',  14: 'Motorbike', 15: 'Person' }
+count_classes = {}
+for i in allowedTypes.values():
+    count_classes[i]=0
+
+print(count_classes)
 
 PARENT_FOLDER="./traffic_analytics/static/AI_models/object_counter/"
 class objectCounter:
@@ -33,7 +39,6 @@ class objectCounter:
       
         self.peopleCount = 0
         self.outPermitedZone = False
-        self.labels = ['background','person']
         self.allowedZones = []
         self.color = lambda state: (0,255,0) if (state) else (0,0,255)
 
@@ -63,13 +68,12 @@ class objectCounter:
         self.ct = CentroidTracker( self.maxDisaperance, self.maxDistance )
         # self.ct = CentroidTracker( )
         self.trackableObjects = {}
+    # def updateConfiguration(self):
 
-    def resetValues(self):
-        self.peopleCount = 0
-        self.outPermitedZone = 0
-        self.labels = ['background','person']
-        self.allowedZones = []
-
+        
+    #     self.maxDistance = 120
+    #     self.maxDistance2 = 120
+    #     self.maxDisaperance = 6
 
     def detectPeople(self, frame, threshold):
         before=time.time()
@@ -91,7 +95,10 @@ class objectCounter:
             if confidence > threshold: # Filter prediction 
                 class_id = int(detections[0, 0, i, 1]) # Class label
 
-                ClassID.append(class_id)
+                if class_id in allowedTypes.keys():
+                    ClassID.append(allowedTypes[class_id])
+                else:
+                    continue
                 Confidence_array.append(confidence)
                 # Object location 
                 xLeft = int(detections[0, 0, i, 3] * cols) 
@@ -190,7 +197,7 @@ class objectCounter:
             newBoxes = []
             newTypeList = []
 
-            detClasses, detConfidences,detBoxes = self.detectPeople(frame, threshold=0.7)
+            detClasses, detConfidences, detBoxes = self.detectPeople(frame, threshold=0.7)
 
             currentOutCount = 0
             for i in range( len(detBoxes) ):
@@ -253,13 +260,20 @@ class objectCounter:
         self.peopleCount = self.ct.nextObjectID
 
         for ((objectID, centroid)),((_,box)) in zip( ctObjects.items(),ctBoxes.items() ):
-                # check to see if a trackable object exists for the current
-                # object ID
+            # check to see if a trackable object exists for the current
+            # object ID
             to = self.trackableObjects.get(objectID, None)
-        
+
             # if there is no existing trackable object, create one
             if to is None:
-                to = TrackableObject(objectID, centroid, (0,255,128), ctTypeObjects[objectID], ctBoxes[objectID])
+                if self.allowedZones[0].contains( (centroid[1],centroid[0]) ):
+                    to = TrackableObject(objectID, centroid, (0,255,128), ctTypeObjects[objectID], ctBoxes[objectID])
+                else:
+                    continue
+            else:
+                if not self.allowedZones[0].contains( (centroid[1],centroid[0]) ):
+                    self.ct.deregister(objectID,count_classes)
+                    continue
 
 
             # store the trackable object in our dictionary
@@ -267,7 +281,7 @@ class objectCounter:
 
             # draw both the ID of the object and the centroid of the
             # object on the output frame
-            text = "{1}_{0} ".format(count_classes[to.otype],classNames[to.otype])
+            text = "{1}_{0} ".format(count_classes[to.otype],to.otype)
             
             for currentBox, currentType in zip(self.currentBoxes, self.currentTypeList):
                 
@@ -275,12 +289,10 @@ class objectCounter:
                 cv2.rectangle(frame2show, (box[0],box[1]-10),(box[2], box[1] + 10), (0,255,0), -1)
                 cv2.putText(frame2show, text, (box[0],box[1]), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,0), 2)
 
-        # if(self.outPermitedZone):
-        # cv2.putText(frame2show, "CROSSED THE RED LIGHT", (15,15), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0,0,255), 2)
+        if(self.outPermitedZone):
+            self.ct.deregister()
        
-        cv2.polylines(frame2show, [np.array(self.allowedZones[0].points)], True, self.color(self.allowedZones[0].allowed), 2)
-        # cv2.polylines(frame2show, [np.array(self.allowedZones[1].points)], True, self.color(self.allowedZones[1].allowed), 2)
-        # cv2.imshow('peopleCounter', frame2show)
+       
 
         to_return=frame2show
 

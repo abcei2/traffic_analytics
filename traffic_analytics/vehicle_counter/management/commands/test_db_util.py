@@ -7,7 +7,7 @@ class Command(BaseCommand):
         
     def handle(self, *args, **kwargs):
         object_data={
-            "vehicle_type":"Car"
+            "vehicle_type":"Car2"
         }
         count_object(object_data)
         

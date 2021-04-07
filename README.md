@@ -4,7 +4,7 @@
 A object counter app.
 
 ## BUILD
-By the moment doesn't have full docker compose setup :(.  
+Currently doesn't have full docker compose setup :(.  
 git clone https://github.com/abcei2/traffic_analytics
 cd traffic_analytics  
 **To setup rtmp server i use docker-compose**  
