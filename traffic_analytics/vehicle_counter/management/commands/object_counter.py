@@ -10,8 +10,9 @@ class Command(BaseCommand):
     help = 'Excecute counter!!!'
 
     def __init__(self):        
-        self.path = 0
+        self.path ="rtmp://127.0.0.1:1935/live/rpi_rio"
         self.cap = cv2.VideoCapture(self.path)
+        print("loaded")
         self.rtmp_url = "rtmp://127.0.0.1:1935/live/pupils_trace"
         # gather video info to ffmpeg
         self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
@@ -32,7 +33,7 @@ class Command(BaseCommand):
             self.rtmp_url]
         self.detector=objectCounter()
         self.polygon=json.loads(VehicleAssessmentConfiguration.objects.all().values()[0]["detection_roi"])
-        print("INITIALITZING")
+
 
         
     def handle(self, *args, **kwargs):
@@ -49,7 +50,7 @@ class Command(BaseCommand):
             before_detection=time.time()
             frame=self.detector.processVideoStream(self.polygon,frame)
             print(f"SPEND TIME {time.time()-before_detection} seconds",end="\r")
-            # YOUR CODE FOR PROCESSING FRAME HERE
+    
 
             # write to pipe
             p.stdin.write(frame.tobytes())

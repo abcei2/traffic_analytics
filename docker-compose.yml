@@ -1,10 +1,23 @@
-version: '2.2' 
+version: '2.0' 
 
 services:
-
   #rtmp
   rtmp:
     image: tiangolo/nginx-rtmp
     restart: always
     ports:
       - 1935:1935
+  #DJANGO APP
+  django:
+    build: .
+    command: bash -c "python manage.py makemigrations && python manage.py migrate && python manage.py collectstatic --no-input && python manage.py runserver 0.0.0.0:8000"
+    volumes:
+      - ./traffic_analytics:/opt/app/traffic_analytics            
+      - ./data:/opt/app/data      
+      - ./env:/opt/app/env      
+    ports:
+      - "8000:8000"
+    depends_on:
+      - rtmp
+    links:
+      - rtmp
