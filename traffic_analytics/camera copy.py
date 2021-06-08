@@ -24,10 +24,9 @@ class VideoTransformTrack(MediaStreamTrack):
 
     kind = "video"
 
-    def __init__(self, track, main_frame):
+    def __init__(self, track):
         super().__init__()  # don't forget this!
         self.track = track
-        self.main_frame = main_frame
 
     async def recv(self):
         
@@ -35,15 +34,14 @@ class VideoTransformTrack(MediaStreamTrack):
         frame = await self.track.recv()
         
         # print(frame.copy()   )
-
+        # self.main_frame.update_frame(frame.copy())
         
         print(f"takes {time.time()-before}")
-        
-        self.main_frame.update_frame(frame)
-        
+        # cv2.imshow("frame",frame.to_ndarray )
+        # cv2.waitKey(10)
         return frame
 
-async def run_loop(pc, player, recorder, signaling, relay, role, main_frame):
+async def run_loop(pc, player, recorder, signaling, relay, role, main_frame,loop):
     def add_tracks():
         if player and player.audio:
             pc.addTrack(player.audio)
@@ -59,9 +57,10 @@ async def run_loop(pc, player, recorder, signaling, relay, role, main_frame):
         if track.kind == "video":
             pc.addTrack(
                 VideoTransformTrack(
-                    relay.subscribe(track), main_frame
+                    relay.subscribe(track)
                 )
             )
+
     # connect signaling
     await signaling.connect()
 
@@ -124,60 +123,53 @@ class FrameClass(object):
         
        
 
-class RunAsync (threading.Thread):
-   def __init__(self, main_frame):
-      threading.Thread.__init__(self)
-      self.main_frame = main_frame
-      
-   def run(self):
-        relay = MediaRelay()    
-        # create signaling and peer connection
-        signaling = TcpSocketSignaling("192.168.195.144", "8082")
-        pc = RTCPeerConnection()
 
-        player = None
-
-        # create media sink
-        # if args.record_to:
-        #     recorder = MediaRecorder(args.record_to)
-        # else:
-        recorder = MediaBlackhole()
-        print("creating!")
-
-        
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(run_loop(
-            pc=pc,
-            player=player,
-            recorder=recorder,
-            relay=relay,
-            signaling=signaling,
-            role="answer",
-            main_frame=self.main_frame,
-        ))
-        
-
-     
 
 def gen(camera):
     
+
+    relay = MediaRelay()    
+    # create signaling and peer connection
+    signaling = TcpSocketSignaling("192.168.1.20", "8082")
+    pc = RTCPeerConnection()
+
+    player = None
+
+    # create media sink
+    # if args.record_to:
+    #     recorder = MediaRecorder(args.record_to)
+    # else:
+    recorder = MediaBlackhole()
+    print("creating!")
+
+    loop = asyncio.new_event_loop()
+    threading.Thread(target=loop.run_forever).start()  
     main_frame = FrameClass()  
-    conect_to_peer=RunAsync(main_frame)
-    conect_to_peer.start()
-    
+    future = asyncio.run_coroutine_threadsafe(run_loop(
+        pc=pc,
+        player=player,
+        recorder=recorder,
+        relay=relay,
+        signaling=signaling,
+        role="answer",
+        main_frame=main_frame,
+        loop=loop
+    ), loop)
+    print("pass")
 
     prev_image=None
     # loop.call_soon_threadsafe(loop.stop)
-    print("asdfasd")
+    
     while True:
         # streaming_on, frame = camera.get_frame(False)
         streaming_on= True
+        
         if main_frame.frame:
             actual_frame=main_frame.frame.to_ndarray(format="bgr24")
-            # print(main_frame.frame)
+            
             
             if not main_frame.is_similar(actual_frame, prev_image):   
-                # print(main_frame.frame)   
+                print(main_frame.frame)   
                   
                 prev_image=actual_frame.copy()
                 ret, frame=cv2.imencode('.jpg',prev_image)

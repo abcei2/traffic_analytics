@@ -10,10 +10,10 @@ class Command(BaseCommand):
     help = 'Excecute counter!!!'
 
     def __init__(self):        
-        self.path ="rtmp://127.0.0.1:1935/live/rpi_rio"
+        self.path =0
         self.cap = cv2.VideoCapture(self.path)
         print("loaded")
-        self.rtmp_url = "rtmp://127.0.0.1:1935/live/pupils_trace"
+        self.rtmp_url = "rtmp://127.0.0.1:1935/live/view"
         # gather video info to ffmpeg
         self.fps = int(self.cap.get(cv2.CAP_PROP_FPS))
         self.width = int(self.cap.get(cv2.CAP_PROP_FRAME_WIDTH))
@@ -21,12 +21,14 @@ class Command(BaseCommand):
         self.command = ['ffmpeg',
             '-y',
             '-f', 'rawvideo',
-            '-vcodec', 'rawvideo',
+            '-vcodec', 'rawvideo',         
             '-pix_fmt', 'bgr24',
             '-s', "{}x{}".format(self.width, self.height),
             '-r', str(self.fps),
             '-i', '-',
             '-c:v', 'libx264',
+            '-fflags', 'nobuffer',   
+            '-tune', 'zerolatency',
             '-pix_fmt', 'yuv420p',
             '-preset', 'ultrafast',
             '-f', 'flv',

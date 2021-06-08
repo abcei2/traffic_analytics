@@ -3,7 +3,7 @@ from django.conf.urls import url
 from django.http import StreamingHttpResponse
 
 from camera import VideoCamera, gen
-from vehicle_counter.views import update_roi, update_lane_separator
+from vehicle_counter.views import update_roi, update_lane_separator, update_enabled_types
 
 app_name = "vehicle_counter"
 urlpatterns = [
@@ -13,5 +13,7 @@ urlpatterns = [
     path("update_roi", update_roi, name="update_roi"),
 
     path("update_lane_separator", update_lane_separator, name="update_lane_separator"),
+
+    path("update_enabled_types", update_enabled_types, name="update_enabled_types"),
 ]
 

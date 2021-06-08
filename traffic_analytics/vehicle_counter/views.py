@@ -13,11 +13,13 @@ class Home(BaseView):
     def get(self, request, *args, **kwargs):
       
         detection_roi=VehicleAssessmentConfiguration.objects.all().values()[0]["detection_roi"]
-        vehicle_types=list(VehicleTypes.objects.all().values('name'))
+        vehicle_types=list(VehicleTypes.objects.all().values('id','name','enabled'))
         street_lanes=list(StreetLanes.objects.all().values('id','x_1','y_1','x_2','y_2'))
 
         for i in range(len(street_lanes)):
             street_lanes[i]["id"]=str(street_lanes[i]["id"])
+        for i in range(len(vehicle_types)):
+            vehicle_types[i]["id"]=str(vehicle_types[i]["id"])
 
         context = {
             "detection_roi":detection_roi,      
@@ -50,3 +52,12 @@ def update_lane_separator(request):
             )
         return JsonResponse({"ok":"OK"})
 
+def update_enabled_types(request):    
+    if request.method == "POST":
+        id_checked = json.loads(request.POST.get("id_checked"))
+        enabled = json.loads(request.POST.get("enabled"))
+        print(enabled)
+        # VehicleTypes.objects.filter(id=uuid.UUID(id_checked).hex).update(                
+        #     enabled=lanes_separator[i]["x_1"]   
+        # )
+        return JsonResponse({"ok":"OK"})

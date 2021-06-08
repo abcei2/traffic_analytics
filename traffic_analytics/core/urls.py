@@ -5,11 +5,12 @@ from django.contrib.auth import views
 
 from ui.views import Signup, Login, Logout, PasswordResetView
 from vehicle_counter.views import Home
-
+from django.shortcuts import redirect
 
 urlpatterns = [
-    path("inicio", Home.as_view(), name="home"),
-    path("", include(("vehicle_counter.urls", "vehicle_counter"), namespace="vehicle_counter")),
+    path("inicio/", Home.as_view(), name="home"),
+    path("", lambda req: redirect('/inicio/')),
+    path("vehicle_counter/", include(("vehicle_counter.urls", "vehicle_counter"), namespace="vehicle_counter")),
     path("login/", Login.as_view(), name="login"),
     path("logout/", Logout.as_view(), name="logout"),
     path("password_reset/<uid>/", PasswordResetView.as_view(), name="password_reset"),

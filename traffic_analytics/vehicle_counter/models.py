@@ -28,9 +28,11 @@ class VehicleAssessmentConfiguration(BaseModel):
     
 class VehicleTypes(BaseModel):
     name = models.CharField(max_length=50, unique=True, null=False)
-
+    enabled = models.BooleanField(default=True)
+    
 class VehicleAssessment(BaseModel):
     vehicle_type = models.ForeignKey(VehicleTypes, on_delete=models.CASCADE)
+    
 
 class StreetLanes(BaseModel):
     x_1=models.FloatField()

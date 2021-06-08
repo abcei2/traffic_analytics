@@ -51,27 +51,26 @@
 </style>
 
 <div class="container">
+
     <br>
     <div class="card" style="width:800px; ">
         <div class="card-header">
             <h4>Objetos a contar</h4>
         </div>
         <div class="row" style="margin-left:20px">
-            <div class="col-2" >
-                <input type="checkbox" name="text1" value="value1" /><label for="text1">Car</label>
-            </div>
-            <div class="col-2" >
-                <input type="checkbox" name="text2" value="value2" /><label for="text2">Truck</label>
-            </div>
-            <div class="col-2" >
-                <input type="checkbox" name="text3" value="value3" /><label for="text3">Bus</label>
-            </div>
-            <div class="col-2" >
-                <input type="checkbox" name="text4" value="value4" /><label for="text4">Bycicle</label>
-            </div>
-            <div class="col-2" >
-                <input type="checkbox" name="text5" value="value5" /><label for="text5">Bike</label>
-            </div>
+            {% for vehicle_type in vehicle_types %}
+                <div class="col-2" >
+                    {% if vehicle_type.enabled %}                
+                        <input type="checkbox" onchange="myFunction(this)" id="{{ vehicle_type.id }}" name="{{ vehicle_type.name }}" checked /> <label for="text1"> {{ vehicle_type.name }}</label>
+                    {% else %}
+                        <input type="checkbox" onchange="myFunction(this)" id="{{ vehicle_type.id }}" name="{{ vehicle_type.name }}"  /> <label for="text1"> {{ vehicle_type.name }}</label>
+                    {% endif %}
+                    
+                </div>
+                
+            {% endfor %}
+            
+            
         </div>
     </div>
     <br>    
@@ -120,8 +119,42 @@
 </div>
 
 <script>
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                // Does this cookie string begin with the name we want?
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+    function myFunction(checked_id){
+        $.ajax({
+            type:'POST',
+            url:'{% url "vehicle_counter:update_enabled_types" %}',
+            
+            headers:{'X-CSRFToken':getCookie("csrf_token")},    
+            data:
+            {
+                id_checked:checked_id.id,
+                enabled:checked_id.checked
+            },
+            success:function(){
+                  alert('Saved');
+                    }
+            }
+        )
+        console.log(checked_id.id)
+        
 
-    
+    }
+    // console.log(JSON.parse("{{ vehicle_types|safe }}"))
     
     vehicle_count_zone={{ detection_roi|safe }}
     lanes_separator={{ street_lanes |safe }}
