@@ -26,8 +26,10 @@ SERVER_ENV = os.getenv("SERVER_ENV", "DEV").upper()
 DEBUG = False
 SERVE_STATIC = False
 
-DEFAULT_HOST = "www.diagnosticomadurez4.0.cta.org.co"
-ALLOWED_HOSTS = [DEFAULT_HOST]
+# DEFAULT_HOST = "www.diagnosticomadurez4.0.cta.org.co"
+# ALLOWED_HOSTS = [DEFAULT_HOST]
+DEFAULT_HOST = "207.246.118.54"
+ALLOWED_HOSTS = ["207.246.118.54"]
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = str(Path(__file__).resolve(strict=True).parent.parent)

@@ -1,194 +1,43 @@
-import cv2
-import time
-import os
-import asyncio 
-import numpy as np
-from aiortc import (
-    RTCIceCandidate,
-    RTCPeerConnection,
-    RTCSessionDescription,
-    VideoStreamTrack,
-    MediaStreamTrack
-)
-from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder, MediaRelay
-from aiortc.contrib.signaling import BYE, add_signaling_arguments, create_signaling, TcpSocketSignaling
-
-import threading
-import time
-
-
-class VideoTransformTrack(MediaStreamTrack):
-    """
-    A video stream track that transforms frames from an another track.
-    """
-
-    kind = "video"
-
-    def __init__(self, track, main_frame):
-        super().__init__()  # don't forget this!
-        self.track = track
-        self.main_frame = main_frame
-
-    async def recv(self):
-        
-        before=time.time()
-        frame = await self.track.recv()
-        
-        # print(frame.copy()   )
-
-        
-        print(f"takes {time.time()-before}")
-        
-        self.main_frame.update_frame(frame)
-        
-        return frame
-
-async def run_loop(pc, player, recorder, signaling, relay, role, main_frame):
-    def add_tracks():
-        if player and player.audio:
-            pc.addTrack(player.audio)
-
-        if player and player.video:
-            pc.addTrack(player.video)
-    
-    @pc.on("track")
-    def on_track(track):
-
-        print("Receiving %s" % track.kind)
-        recorder.addTrack(track)
-        if track.kind == "video":
-            pc.addTrack(
-                VideoTransformTrack(
-                    relay.subscribe(track), main_frame
-                )
-            )
-    # connect signaling
-    await signaling.connect()
-
-    # consume signaling
-    while True:
-        obj = await signaling.receive()
-
-        if isinstance(obj, RTCSessionDescription):
-            await pc.setRemoteDescription(obj)
-            await recorder.start()
-
-            if obj.type == "offer":
-                # send answer
-                add_tracks()
-                await pc.setLocalDescription(await pc.createAnswer())
-                await signaling.send(pc.localDescription)
-        elif isinstance(obj, RTCIceCandidate):
-            await pc.addIceCandidate(obj)
-        elif obj is BYE:
-            print("Exiting")
-            break
-
-
-class VideoCamera(object):
-
-    def __init__(self):
-        
-        self.image_off=cv2.imread(f"traffic_analytics/static/img/off-air.jpg")
-
-    def __del__(self):
-        print("DELETED")
-
-    def get_frame(self, streaming_on):
-        # print(f"time spend {time.time()-self.before}")
-        self.before=time.time()
-        image=[]
-        if streaming_on:
-            success, image = self.video.read()
-            if not success:
-                image=self.image_off
-        else:
-            image=self.image_off
-        # We are using Motion JPEG, but OpenCV defaults to capture raw images,
-        # so we must encode it into JPEG in order to correctly display the
-        # video stream.
-        ret, jpeg = cv2.imencode('.jpg', image)
-        return streaming_on, jpeg.tobytes()
-
-class FrameClass(object):
-    def __init__(self):
-        self.frame=None
-    def update_frame(self,frame):
-        self.frame=frame
-    def is_similar(self,actual_frame, prev_image):
-        try:
-            return actual_frame.shape == prev_image.shape and not(np.bitwise_xor(actual_frame,prev_image).any())
-        except AttributeError as error:
-            
-            return False
-        
-       
-
-class RunAsync (threading.Thread):
-   def __init__(self, main_frame):
-      threading.Thread.__init__(self)
-      self.main_frame = main_frame
-      
-   def run(self):
-        relay = MediaRelay()    
-        # create signaling and peer connection
-        signaling = TcpSocketSignaling("192.168.195.144", "8082")
-        pc = RTCPeerConnection()
-
-        player = None
-
-        # create media sink
-        # if args.record_to:
-        #     recorder = MediaRecorder(args.record_to)
-        # else:
-        recorder = MediaBlackhole()
-        print("creating!")
-
-        
-        loop = asyncio.new_event_loop()
-        loop.run_until_complete(run_loop(
-            pc=pc,
-            player=player,
-            recorder=recorder,
-            relay=relay,
-            signaling=signaling,
-            role="answer",
-            main_frame=self.main_frame,
-        ))
-        
-
      
+import io
+import time
+import socket
+import struct
+from PIL import Image
 
-def gen(camera):
     
-    main_frame = FrameClass()  
-    conect_to_peer=RunAsync(main_frame)
-    conect_to_peer.start()
-    
+def gen():
+    # Start a socket listening for connections on 0.0.0.0:8000 (0.0.0.0 means
+    # all interfaces)
+    server_socket = socket.socket()
+    server_socket.bind(('0.0.0.0', 8080))
+    server_socket.listen(0)
 
-    prev_image=None
-    # loop.call_soon_threadsafe(loop.stop)
-    print("asdfasd")
-    while True:
-        # streaming_on, frame = camera.get_frame(False)
-        streaming_on= True
-        if main_frame.frame:
-            actual_frame=main_frame.frame.to_ndarray(format="bgr24")
-            # print(main_frame.frame)
-            
-            if not main_frame.is_similar(actual_frame, prev_image):   
-                # print(main_frame.frame)   
-                  
-                prev_image=actual_frame.copy()
-                ret, frame=cv2.imencode('.jpg',prev_image)
-                frame=frame.tobytes()
-            
-                if streaming_on:
-                    yield (b'--frame\r\n'
-                        b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
-                    
-                    before=time.time()
-                                
-        # sleep(10)
-        # else:
-        #     break
+    # Accept a single connection and make a file-like object out of it
+    connection = server_socket.accept()[0].makefile('rb')
+    try:
+        while True:
+            before=time.time()
+            # Read the length of the image as a 32-bit unsigned int. If the
+            # length is zero, quit the loop
+            image_len = struct.unpack('<L', connection.read(struct.calcsize('<L')))[0]
+            if not image_len:
+                break
+            # Construct a stream to hold the image data and read the image
+            # data from the connection
+            image_stream = io.BytesIO()
+            image_stream.write(connection.read(image_len))
+            # Rewind the stream, open it as an image with PIL and do some
+            # processing on it
+            image_stream.seek(0)
+            #image = Image.open(image_stream)
+            #print('Image is %dx%d' % image.size)
+            #image.verify()
+            #print('Image is verified')
+            yield (b'--frame\r\n'
+                    b'Content-Type: image/jpeg\r\n\r\n' + image_stream.getvalue() + b'\r\n\r\n')
+            print(f"takes {time.time()-before}")
+    finally:
+        connection.close()
+        server_socket.close()
+
