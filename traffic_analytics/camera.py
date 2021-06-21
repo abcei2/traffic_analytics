@@ -2,6 +2,7 @@ import cv2
 import time
 import os
 import asyncio 
+import sys
 import numpy as np
 from aiortc import (
     RTCIceCandidate,
@@ -11,10 +12,8 @@ from aiortc import (
     MediaStreamTrack
 )
 from aiortc.contrib.media import MediaBlackhole, MediaPlayer, MediaRecorder, MediaRelay
-from aiortc.contrib.signaling import BYE, add_signaling_arguments, create_signaling, TcpSocketSignaling
-
+from aiortc.contrib.signaling import BYE, add_signaling_arguments, create_signaling, CopyAndPasteSignaling, object_from_string, object_to_string
 import threading
-import time
 
 
 class VideoTransformTrack(MediaStreamTrack):
@@ -84,32 +83,6 @@ async def run_loop(pc, player, recorder, signaling, relay, role, main_frame):
             print("Exiting")
             break
 
-
-class VideoCamera(object):
-
-    def __init__(self):
-        
-        self.image_off=cv2.imread(f"traffic_analytics/static/img/off-air.jpg")
-
-    def __del__(self):
-        print("DELETED")
-
-    def get_frame(self, streaming_on):
-        # print(f"time spend {time.time()-self.before}")
-        self.before=time.time()
-        image=[]
-        if streaming_on:
-            success, image = self.video.read()
-            if not success:
-                image=self.image_off
-        else:
-            image=self.image_off
-        # We are using Motion JPEG, but OpenCV defaults to capture raw images,
-        # so we must encode it into JPEG in order to correctly display the
-        # video stream.
-        ret, jpeg = cv2.imencode('.jpg', image)
-        return streaming_on, jpeg.tobytes()
-
 class FrameClass(object):
     def __init__(self):
         self.frame=None
@@ -124,7 +97,43 @@ class FrameClass(object):
         
        
 
-class RunAsync (threading.Thread):
+class OwnCopyPaste(CopyAndPasteSignaling):
+
+    def __init__(self):
+        self._read_pipe = sys.stdin
+        self._read_transport = None
+        self._reader = None
+        self._write_pipe = sys.stdout
+
+    async def connect(self):
+        loop = asyncio.get_event_loop()
+        self._reader = asyncio.StreamReader(loop=loop)
+        self._read_transport, _ = await loop.connect_read_pipe(
+            lambda: asyncio.StreamReaderProtocol(self._reader), self._read_pipe
+        )
+        print("-- CONNECTED --")
+
+    async def close(self):
+        if self._reader is not None:
+            await self.send(BYE)
+            self._read_transport.close()
+            self._reader = None
+            print("-- DISCONNECTED --")
+
+    async def receive(self):
+        print("-- Please enter a message from remote party --")
+        data = await self._reader.readline() #OBTAIN OFFER
+        print()
+        return object_from_string(data.decode(self._read_pipe.encoding))
+        
+
+    async def send(self, descr):
+        print("-- Please send this message to remote party  --")
+        self._write_pipe.write(object_to_string(descr) + "\n")
+        self._write_pipe.flush()
+        print()
+
+class RunAsync(threading.Thread):
    def __init__(self, main_frame):
       threading.Thread.__init__(self)
       self.main_frame = main_frame
@@ -132,7 +141,7 @@ class RunAsync (threading.Thread):
    def run(self):
         relay = MediaRelay()    
         # create signaling and peer connection
-        signaling = TcpSocketSignaling("192.168.195.144", "8082")
+        signaling = OwnCopyPaste()
         pc = RTCPeerConnection()
 
         player = None
@@ -159,7 +168,7 @@ class RunAsync (threading.Thread):
 
      
 
-def gen(camera):
+def gen():
     
     main_frame = FrameClass()  
     conect_to_peer=RunAsync(main_frame)
@@ -188,6 +197,7 @@ def gen(camera):
                         b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n\r\n')
                     
                     before=time.time()
+        time.sleep(0.1)
                                 
         # sleep(10)
         # else:
